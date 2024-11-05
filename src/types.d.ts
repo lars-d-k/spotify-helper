@@ -20,7 +20,14 @@ interface UserProfile {
 interface Album {
     id: string;
     name: string;
-    
+    artists: Array<Artist>;    
+    error?: object;
+}
+
+interface Artist {
+    id: string;
+    name: string;
+    error?: object;
 }
 
 interface Track {
@@ -28,6 +35,8 @@ interface Track {
     external_urls: {
         spotify: string;
     }
+    artists: Array<Artist>;    
+    error?: object;
 }
 
 interface Image {

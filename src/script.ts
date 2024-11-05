@@ -2,18 +2,21 @@
 // we detect a callback from Spotify by checking for the hash fragment
 import { redirectToAuthCodeFlow, getAccessToken } from "./authCodeWithPkce";
 
-const clientId = "466e28d7d351498fbed7af441e08dcb7";
+const clientId = "REPLACE_WITH_TOKEN";
 const params = new URLSearchParams(window.location.search);
 const code = params.get("code");
+
+let profile: UserProfile;
 
 if (!code) {
     redirectToAuthCodeFlow(clientId);
 } else {
-    let profile, accessToken;
+    let accessToken;
     while (true) {
         accessToken = await getAccessToken(clientId, code);
         profile = await fetchProfile(accessToken);
         if (profile.error) {
+            console.log(profile.error)
             redirectToAuthCodeFlow(clientId);
         } else {
             break;
@@ -24,30 +27,111 @@ if (!code) {
 }
 
 async function getSongs(accessToken: any) {
-    console.log('get songs:')
-    console.log('- fetching albums:')
+    // define html elements
+    let headings = {
+        title: document.getElementById("title")! as HTMLHeadingElement,
+        subtitle: document.getElementById("subtitle")! as HTMLHeadingElement
+    }
 
-    let albumElement = document.getElementById("albums")! as HTMLButtonElement;
-    albumElement.innerText = `Fetching all albums`;
-    albumElement.disabled = true;
+    let buttons = {
+        getArtist: document.getElementById("get-artist")! as HTMLButtonElement, 
+        copySongs: document.getElementById("copy-songs")! as HTMLButtonElement, 
+        saveToPlaylist: document.getElementById("save-to-playlist")! as HTMLButtonElement
+    }
 
-    const id = prompt("artist id")
-    const albums = await fetchArtistAlbums(accessToken, id);
+    // get artist
+    const artistId = prompt("artist id") ?? ""
+    console.log('fetching artist:')
+    const artist = await fetchArtist(accessToken, artistId);
+    if (artist.error) {
+        buttons.getArtist.disabled = false;
+        buttons.copySongs.disabled = true;
+        buttons.saveToPlaylist.disabled = true;
+        headings.title.innerText = `Failed to fetch artist for id '${artistId}'`
+        headings.subtitle.innerText = '';
+        return;
+    }
+
+    // update ui
+    buttons.getArtist.disabled = true;
+    buttons.copySongs.disabled = true;
+    buttons.saveToPlaylist.disabled = true;
+    headings.title.innerText = `Fetching tracks for ${artist.name}`
+
+    // get albums
+    headings.subtitle.innerText = `Fetching albums...`;
+    console.log(`- fetching albums for ${artist.name}:`)
+    const albums = await fetchArtistAlbums(accessToken, artist.id);
+    if (!albums || albums.length < 1) {
+        buttons.getArtist.disabled = false;
+        buttons.copySongs.disabled = true;
+        buttons.saveToPlaylist.disabled = true;
+        headings.title.innerText = `Failed to fetch albums for ${artist.name}`
+        headings.subtitle.innerText = '';
+        return;
+    }
+
+    // get tracks
     let tracks = new Array<Track>
     for (let i = 0; i < albums.length ; i++) {
         const album = albums[i];
         
         console.log(`  - Fetching (${i + 1}/${albums.length}) album (${album.name}) Tracks`)
-        albumElement.innerText = `Fetching tracks from album ${i + 1}/${albums.length}`;
+        headings.subtitle.innerText = `Fetching tracks from album ${i + 1}/${albums.length}...`;
         tracks = tracks.concat(await fetchAlbumTracks(accessToken, album.id))
     }
-    albumElement.innerText = `Click to copy tracks`;
-    albumElement.disabled = false;
-    albumElement.addEventListener("click", () => {
+
+    // only tracks that include artist
+    tracks = tracks.filter(x => x.artists.map(x => x.id).includes(artist.id));    
+
+    // no tracks
+    if (!tracks || tracks.length < 1) {
+        buttons.getArtist.disabled = false;
+        buttons.copySongs.disabled = true;
+        buttons.saveToPlaylist.disabled = true;
+        headings.title.innerText = `Failed to fetch tracks for ${artist.name}`
+        headings.subtitle.innerText = '';
+        return;
+    }
+
+    // done, enable buttons and set text
+    buttons.copySongs.disabled = false;
+    buttons.copySongs.addEventListener("click", () => {
         navigator.clipboard.writeText(tracks.map(x => x.external_urls.spotify).join('\n'))
             .then(() => console.log("Spotify links copied to clipboard!"))
             .catch(err => console.error("Failed to copy text: ", err));
     });
+    buttons.saveToPlaylist.disabled = false;
+    buttons.saveToPlaylist.addEventListener("click", () => {
+        saveToPlaylist(accessToken, `ALL of ${artist.name}`, tracks, profile)
+            .then(() => console.log("Spotify playlist saved!"))
+            .catch(err => console.error("Failed to copy text: ", err));
+
+    buttons.saveToPlaylist.disabled = false;
+    headings.title.innerText = `Fetched tracks for ${artist.name}`
+    headings.subtitle.innerText = '';
+    });    
+}
+
+async function saveToPlaylist(code: string, title: string, tracks: Array<Track>, user: UserProfile) {
+    alert("Sorry, this feature has not yet been implemented. Instead use the 'Click to copy tracks' and paste into your playlist on desktop.")
+    return;
+
+    const result = await fetch(`https://api.spotify.com/v1/users/${user.id}/playlists`, {
+        method: "POST", 
+        headers: { Authorization: `Bearer ${code}` }, 
+        body: JSON.stringify({
+			name: title,
+            description: "Made using Lars's spotify helper",
+            public: false
+		}) 
+    });
+    let resultJson = await result.json();
+    if (!resultJson.error) {
+        console.log(resultJson)
+    } else {
+        console.log('error', resultJson.error)
+    }
 }
 
 async function fetchProfile(code: string): Promise<UserProfile> {
@@ -57,8 +141,17 @@ async function fetchProfile(code: string): Promise<UserProfile> {
     return await result.json();
 }
 
-async function fetchArtistAlbums(code: string, id: string): Promise<Array<Album>> {
-    let url = `https://api.spotify.com/v1/artists/${id}/albums`
+async function fetchArtist(code: string, artistId: string): Promise<Artist> {
+    let url = `https://api.spotify.com/v1/artists/${artistId}`
+    const result = await fetch(url, {
+        method: "GET", headers: { Authorization: `Bearer ${code}` }
+    });
+    let resultJson = await result.json();
+    return resultJson
+}
+
+async function fetchArtistAlbums(code: string, artistId: string): Promise<Array<Album>> {
+    let url = `https://api.spotify.com/v1/artists/${artistId}/albums`
     let albums = new Array<Album>
     while (true) {
         const result = await fetch(url, {
@@ -76,8 +169,8 @@ async function fetchArtistAlbums(code: string, id: string): Promise<Array<Album>
     }
 }
 
-async function fetchAlbumTracks(code: string, id: string): Promise<Array<Track>> {
-    let url = `https://api.spotify.com/v1/albums/${id}/tracks`
+async function fetchAlbumTracks(code: string, albumId: string): Promise<Array<Track>> {
+    let url = `https://api.spotify.com/v1/albums/${albumId}/tracks`
     let tracks = new Array<Track>
     while (true) {
         const result = await fetch(url, {
@@ -98,5 +191,5 @@ async function fetchAlbumTracks(code: string, id: string): Promise<Array<Track>>
 function populateUI(profile: UserProfile, accessToken: any) {
     document.getElementById("displayName")!.innerText = profile.display_name;
     document.getElementById("avatar")!.setAttribute("src", profile.images[0].url)
-    document.getElementById("get-songs")!.addEventListener("click", () => getSongs(accessToken));
+    document.getElementById("get-artist")!.addEventListener("click", () => getSongs(accessToken));
 }
