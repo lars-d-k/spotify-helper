@@ -14,7 +14,7 @@ I still have some goals in mind for this spotify helper:
     - requires advanced authentication
   - improving ui
     - css library
-    - organization
+    - improve layout
     - naviation through functionalitues ?
 - tedious
   - export app
