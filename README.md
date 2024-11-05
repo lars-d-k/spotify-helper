@@ -11,7 +11,6 @@ To install a local dev version of my spotify helper, follow these steps:
 I still have some goals in mind for this spotify helper:
 - prio
   - Automatically save to playlist
-    - requires advanced authentication
   - improving ui
     - css library
     - improve layout
