@@ -17,4 +17,5 @@ I still have some goals in mind for this spotify helper:
     - improve layout
     - naviation through functionalitues ?
 - tedious
-  - export app
+  - export app as downloadable or runnable
+  - host app using pages
