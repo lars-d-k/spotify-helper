@@ -16,7 +16,6 @@ Functionality
 - [ ] downloadable as script or exe
 
 UI
-- improving ui
-  - [ ] css library
-  - [ ] improve layout
-  - [ ] naviation through functionalitues ?
+- [ ] css library
+- [ ] improve layout
+- [ ] naviation through functionalitues ?
