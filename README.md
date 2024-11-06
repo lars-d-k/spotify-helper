@@ -8,11 +8,13 @@ To install a local dev version of my spotify helper, follow these steps:
 - Run the vite script: `npm run dev`
 
 ## Todo
+
 Functionality
 - [x] Automatically save to playlist
 - [ ] order playlist by ...
 - [ ] host app using github pages
 - [ ] downloadable as script or exe
+
 UI
 - improving ui
   - [ ] css library
