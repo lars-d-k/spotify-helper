@@ -8,7 +8,6 @@ To install a local dev version of my spotify helper, follow these steps:
 - Run the vite script: `npm run dev`
 
 ## Todo
-####I still have some goals in mind for this spotify helper:
 Functionality
 - [x] Automatically save to playlist
 - [ ] order playlist by ...
