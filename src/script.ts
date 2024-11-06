@@ -62,7 +62,7 @@ async function getSongs(accessToken: any) {
     headings.subtitle.innerText = `Fetching albums...`;
     console.log(`- fetching albums for ${artist.name}:`)
     const albums = await fetchArtistAlbums(accessToken, artist.id);
-    if (!albums || albums.length < 1) {
+    if (!albums || !albums[0]) {
         buttons.getArtist.disabled = false;
         buttons.copySongs.disabled = true;
         buttons.saveToPlaylist.disabled = true;
@@ -80,25 +80,34 @@ async function getSongs(accessToken: any) {
         headings.subtitle.innerText = `Fetching tracks from album ${i + 1}/${albums.length}...`;
         tracks = tracks.concat(await fetchAlbumTracks(accessToken, album.id))
     }
-    headings.subtitle.innerText = `Processing tracks...`;
     
     // only tracks that include artist
+    headings.subtitle.innerText = `Processing tracks...`;
     tracks = tracks.filter(x => x.artists.map(x => x.id).includes(artist.id)); 
-    headings.subtitle.innerText = `Fetched ${tracks.length} tracks`;
     
     // enrich track info
+    headings.subtitle.innerText = `Getting more track info...`;
     const chunkSize = 50;
     let newTracks = new Array<Track>;
     for (let i = 0; i < tracks.length; i += chunkSize) {
         const trackChunk = tracks.slice(i, i + chunkSize);
-
+        
         newTracks = newTracks.concat(await completeSongInfo(accessToken, trackChunk));
     }
     const newTrackIds = newTracks.map(x => x.id);
     tracks = tracks
-        .filter(x => !newTrackIds.includes(x.id)) // remove old
-        .concat(newTracks); // add new
+    .filter(x => !newTrackIds.includes(x.id)) // remove old
+    .concat(newTracks); // add new
+    
+    // remove duplicates    
+    headings.subtitle.innerText = `Removing duplicate tracks...`;
+    tracks = getUniqueTracks(tracks)
 
+    // order by descending?
+    if (confirm(`Would you like to order your tracks by popularity?`)) {
+        tracks = tracks.sort((a, b) => b.popularity - a.popularity);
+    }
+    
     // no tracks
     if (!tracks || tracks.length < 1) {
         buttons.getArtist.disabled = false;
@@ -108,12 +117,18 @@ async function getSongs(accessToken: any) {
         headings.subtitle.innerText = '';
         return;
     }
-
+    
     // done, enable buttons and set text
+    headings.title.innerText = `Fetched tracks for ${artist.name}`
+    headings.subtitle.innerText = `Fetched ${tracks.length} tracks`;  
+
     buttons.copySongs.disabled = false;
     buttons.copySongs.addEventListener("click", () => {
         navigator.clipboard.writeText(tracks.map(x => x.external_urls.spotify).join('\n'))
-            .then(() => console.log("Spotify links copied to clipboard!"))
+            .then(() => {
+                console.log("Spotify links copied to clipboard!")
+                buttons.copySongs.disabled = true;
+            })
             .catch(err => console.error("Failed to copy text: ", err));
     });
     buttons.saveToPlaylist.disabled = false;
@@ -141,9 +156,6 @@ async function getSongs(accessToken: any) {
                 }
             })
             .catch(err => console.error("Failed to copy text: ", err));
-
-    headings.title.innerText = `Fetched tracks for ${artist.name}`
-    headings.subtitle.innerText = '';
     });    
 }
 
@@ -270,6 +282,16 @@ async function fetchAlbumTracks(code: string, albumId: string): Promise<Array<Tr
             return tracks
         }
     }
+}
+
+function getUniqueTracks(tracks: Track[]): Track[] {
+    return Object.values(tracks.reduce((r, v) => {
+        const key = `${v.external_ids.isrc}-${v.name}-${v.duration_ms}`;
+        if (!r[key] || r[key].popularity < v.popularity) {
+            r[key] = v;
+        }
+        return r;
+    }, {}));
 }
 
 function populateUI(profile: UserProfile, accessToken: any) {

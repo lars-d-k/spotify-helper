@@ -34,9 +34,14 @@ interface Track {
     id: string;
     name: string;
     popularity: number;
+    duration_ms: number;
     external_urls: {
         spotify: string;
+    };
+    external_ids: {
+        isrc: string;
     }
+    preview_url: string;
     uri: string;
     artists: Array<Artist>;    
     error?: object;
