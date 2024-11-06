@@ -10,11 +10,11 @@ To install a local dev version of my spotify helper, follow these steps:
 ## Todo
 I still have some goals in mind for this spotify helper:
 - prio
-  - Automatically save to playlist
+  - [x] Automatically save to playlist
   - improving ui
-    - css library
-    - improve layout
-    - naviation through functionalitues ?
+    - [ ] css library
+    - [ ] improve layout
+    - [ ] naviation through functionalitues ?
 - tedious
-  - export app as downloadable or runnable
-  - host app using pages
+  - [ ] export app as downloadable or runnable
+  - [ ] host app using github pages
