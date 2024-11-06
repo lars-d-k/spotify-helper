@@ -83,7 +83,20 @@ async function getSongs(accessToken: any) {
     headings.subtitle.innerText = 'Fetched tracks...';
 
     // only tracks that include artist
-    tracks = tracks.filter(x => x.artists.map(x => x.id).includes(artist.id));    
+    tracks = tracks.filter(x => x.artists.map(x => x.id).includes(artist.id)); 
+
+    // enrich track info
+    const chunkSize = 50;
+    let newTracks = new Array<Track>;
+    for (let i = 0; i < tracks.length; i += chunkSize) {
+        const trackChunk = tracks.slice(i, i + chunkSize);
+
+        newTracks = newTracks.concat(await completeSongInfo(accessToken, trackChunk));
+    }
+    const newTrackIds = newTracks.map(x => x.id);
+    tracks = tracks
+        .filter(x => !newTrackIds.includes(x.id)) // remove old
+        .concat(newTracks); // add new
 
     // no tracks
     if (!tracks || tracks.length < 1) {
@@ -157,6 +170,17 @@ async function saveToPlaylist(code: string, title: string, tracks: Array<Track>,
     return playlist
 }
 
+async function completeSongInfo(code: string, tracks: Array<Track>): Promise<Array<Track>> {
+    const result = await fetch(`https://api.spotify.com/v1/tracks?ids=${tracks.map(x => x.id).join(',')}`, {
+        method: "GET", headers: { Authorization: `Bearer ${code}` }
+    });
+    let resultJson = await result.json();
+    if (resultJson.error) {
+        return [ resultJson ];
+    }
+    return resultJson.tracks;
+}
+
 async function createPlaylist(code: string, title: string, userId: string): Promise<Playlist> {
     const result = await fetch(`https://api.spotify.com/v1/users/${userId}/playlists`, {
         method: "POST", 
@@ -169,7 +193,7 @@ async function createPlaylist(code: string, title: string, userId: string): Prom
     });
     let resultJson = await result.json();
     if (resultJson.error) {
-        return { error: resultJson.error } as Playlist;
+        return resultJson;
     }
     return resultJson as Playlist;
 }
@@ -184,7 +208,7 @@ async function addSongsToPlaylist(code: string, playlistId: string, uris: Array<
     });
     let resultJson = await result.json();
     if (resultJson.error) {
-        return { error: resultJson.error };
+        return resultJson;
     }
     return { success: `Added ${uris.length} items to playlist` };
 }

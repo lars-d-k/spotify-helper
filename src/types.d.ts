@@ -33,6 +33,7 @@ interface Artist {
 interface Track {
     id: string;
     name: string;
+    popularity: number;
     external_urls: {
         spotify: string;
     }
