@@ -11,7 +11,8 @@ To install a local dev version of my spotify helper, follow these steps:
 
 Functionality
 - [x] Automatically save to playlist
-- [ ] order playlist by ...
+- [x] order tracks by
+  - [x] popularity 
 - [ ] host app using github pages
 - [ ] downloadable as script or exe
 
