@@ -80,11 +80,12 @@ async function getSongs(accessToken: any) {
         headings.subtitle.innerText = `Fetching tracks from album ${i + 1}/${albums.length}...`;
         tracks = tracks.concat(await fetchAlbumTracks(accessToken, album.id))
     }
-    headings.subtitle.innerText = 'Fetched tracks...';
-
+    headings.subtitle.innerText = `Processing tracks...`;
+    
     // only tracks that include artist
     tracks = tracks.filter(x => x.artists.map(x => x.id).includes(artist.id)); 
-
+    headings.subtitle.innerText = `Fetched ${tracks.length} tracks`;
+    
     // enrich track info
     const chunkSize = 50;
     let newTracks = new Array<Track>;
