@@ -80,6 +80,7 @@ async function getSongs(accessToken: any) {
         headings.subtitle.innerText = `Fetching tracks from album ${i + 1}/${albums.length}...`;
         tracks = tracks.concat(await fetchAlbumTracks(accessToken, album.id))
     }
+    headings.subtitle.innerText = 'Fetched tracks...';
 
     // only tracks that include artist
     tracks = tracks.filter(x => x.artists.map(x => x.id).includes(artist.id));    
@@ -103,21 +104,61 @@ async function getSongs(accessToken: any) {
     });
     buttons.saveToPlaylist.disabled = false;
     buttons.saveToPlaylist.addEventListener("click", () => {
+        buttons.saveToPlaylist.disabled = true;
         saveToPlaylist(accessToken, `ALL of ${artist.name}`, tracks, profile)
-            .then(() => console.log("Spotify playlist saved!"))
+            .then(playlist => {
+                console.log('playlist result', playlist)
+                // complete and songs added
+                if (!playlist.error) {
+                    headings.subtitle.innerText = `Tracks saved to playlist: `;
+                    let link = document.createElement('a');
+                    link.href = playlist.uri;
+                    link.innerText = playlist.name;
+                    headings.subtitle.appendChild(link)
+                } 
+                // playlist was created but no(t all) songs added
+                else if (playlist.error.hasOwnProperty('playlistCreated')) {
+                    headings.subtitle.innerText = `<a href="${playlist.external_urls.spotify}">Playlist</a> created but no(t all) songs were added`;
+                } 
+                // failed to create playlist
+                else {
+                    headings.subtitle.innerText = `Playlist failed to create, try again`;
+                    buttons.saveToPlaylist.disabled = false;
+                }
+            })
             .catch(err => console.error("Failed to copy text: ", err));
 
-    buttons.saveToPlaylist.disabled = false;
     headings.title.innerText = `Fetched tracks for ${artist.name}`
     headings.subtitle.innerText = '';
     });    
 }
 
-async function saveToPlaylist(code: string, title: string, tracks: Array<Track>, user: UserProfile) {
-    alert("Sorry, this feature has not yet been implemented. Instead use the 'Click to copy tracks' and paste into your playlist on desktop.")
-    return;
+async function saveToPlaylist(code: string, title: string, tracks: Array<Track>, user: UserProfile): Promise<Playlist> {
+    // alert("Sorry, this feature has not yet been implemented. Instead use the 'Click to copy tracks' and paste into your playlist on desktop.")
+    // return;
 
-    const result = await fetch(`https://api.spotify.com/v1/users/${user.id}/playlists`, {
+    let playlist = await createPlaylist(code, title, user.id)
+    if (playlist.error) {
+        return playlist;
+    }
+    
+    const chunkSize = 100;
+    const results = new Array<Object>;
+    for (let i = 0; i < tracks.length; i += chunkSize) {
+        const uriChunk = tracks.slice(i, i + chunkSize).map(x => x.uri);
+
+        results.push(await addSongsToPlaylist(code, playlist.id, uriChunk));
+    }
+    
+    const failedChunks = results.filter(x => x.hasOwnProperty('error'));
+    if (failedChunks.length > 0) {
+        playlist.error = { playlistCreated: true, message: `${failedChunks.length} chunks (max: ${chunkSize}) of tracks failed to be added to playlist`, failedChunks: failedChunks };
+    }
+    return playlist
+}
+
+async function createPlaylist(code: string, title: string, userId: string): Promise<Playlist> {
+    const result = await fetch(`https://api.spotify.com/v1/users/${userId}/playlists`, {
         method: "POST", 
         headers: { Authorization: `Bearer ${code}` }, 
         body: JSON.stringify({
@@ -127,13 +168,28 @@ async function saveToPlaylist(code: string, title: string, tracks: Array<Track>,
 		}) 
     });
     let resultJson = await result.json();
-    if (!resultJson.error) {
-        console.log(resultJson)
-    } else {
-        console.log('error', resultJson.error)
+    if (resultJson.error) {
+        return { error: resultJson.error } as Playlist;
     }
+    return resultJson as Playlist;
 }
 
+async function addSongsToPlaylist(code: string, playlistId: string, uris: Array<string>): Promise<object> {
+    const result = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`, {
+        method: "POST", 
+        headers: { Authorization: `Bearer ${code}` }, 
+        body: JSON.stringify({
+			uris: uris
+		}) 
+    });
+    let resultJson = await result.json();
+    if (resultJson.error) {
+        return { error: resultJson.error };
+    }
+    return { success: `Added ${uris.length} items to playlist` };
+}
+
+// this fetches information about the profile of the user that is using the app
 async function fetchProfile(code: string): Promise<UserProfile> {
     const result = await fetch("https://api.spotify.com/v1/me", {
         method: "GET", headers: { Authorization: `Bearer ${code}` }
@@ -141,6 +197,7 @@ async function fetchProfile(code: string): Promise<UserProfile> {
     return await result.json();
 }
 
+// this fetches information about a spotify artist using their id 
 async function fetchArtist(code: string, artistId: string): Promise<Artist> {
     let url = `https://api.spotify.com/v1/artists/${artistId}`
     const result = await fetch(url, {
@@ -150,8 +207,9 @@ async function fetchArtist(code: string, artistId: string): Promise<Artist> {
     return resultJson
 }
 
+// this fetches all the albums that for an artist using their id 
 async function fetchArtistAlbums(code: string, artistId: string): Promise<Array<Album>> {
-    let url = `https://api.spotify.com/v1/artists/${artistId}/albums`
+    let url = `https://api.spotify.com/v1/artists/${artistId}/albums?limit=50`
     let albums = new Array<Album>
     while (true) {
         const result = await fetch(url, {
@@ -169,8 +227,9 @@ async function fetchArtistAlbums(code: string, artistId: string): Promise<Array<
     }
 }
 
+// this fetches all the tracks that for an album using its id 
 async function fetchAlbumTracks(code: string, albumId: string): Promise<Array<Track>> {
-    let url = `https://api.spotify.com/v1/albums/${albumId}/tracks`
+    let url = `https://api.spotify.com/v1/albums/${albumId}/tracks?limit=50`
     let tracks = new Array<Track>
     while (true) {
         const result = await fetch(url, {

@@ -31,11 +31,24 @@ interface Artist {
 }
 
 interface Track {
+    id: string;
     name: string;
     external_urls: {
         spotify: string;
     }
+    uri: string;
     artists: Array<Artist>;    
+    error?: object;
+}
+
+interface Playlist {
+    id: string;
+    name: string;
+    description: string;
+    external_urls: {
+        spotify: string;
+    }
+    uri: string;
     error?: object;
 }
 
