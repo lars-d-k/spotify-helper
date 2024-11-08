@@ -51,8 +51,12 @@ if (!code) {
     });
 }
 
-
 async function getSongs(accessToken: any, artistId: string | null) {
+    // clear all eventlisteners
+    var old_element = document.getElementById("all")!;
+    var new_element = old_element.cloneNode(true);
+    old_element.parentNode!.replaceChild(new_element, old_element);
+
     // define html elements
     let headings = {
         title: document.getElementById("title")! as HTMLHeadingElement,

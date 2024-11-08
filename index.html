@@ -8,15 +8,18 @@
 </head>
 
 <body>
-  <div>
-    <img id="avatar" width="200" src="#" style="vertical-align: middle;width: 28px;height: 28px;border-radius: 50%;float: left;margin-right: 10px;"/>
-    <h2>Logged in as <span id="displayName"></span></h2>
+  <div id="all">
+    <div>
+      <img id="avatar" width="200" src="#"
+        style="vertical-align: middle;width: 28px;height: 28px;border-radius: 50%;float: left;margin-right: 10px;" />
+      <h2>Logged in as <span id="displayName"></span></h2>
+    </div>
+    <h1 id="title">Get all artists songs</h1>
+    <h2 id="subtitle"></h2>
+    <button id="get-artist">Fetch songs for artist</button>
+    <button id="copy-songs" disabled>Click to copy tracks</button>
+    <button id="save-to-playlist" disabled>Click save to playlist</button>
   </div>
-  <h1 id="title">Get all artists songs</h1>
-  <h2 id="subtitle"></h2>
-  <button id="get-artist">Fetch songs for artist</button>
-  <button id="copy-songs" disabled>Click to copy tracks</button>
-  <button id="save-to-playlist" disabled>Click save to playlist</button>
 </body>
 
 </html>
