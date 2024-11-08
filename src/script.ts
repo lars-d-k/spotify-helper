@@ -6,6 +6,12 @@ const clientId = "905dd5f352484d81a65a690fe3f0b4e6";
 const params = new URLSearchParams(window.location.search);
 const code = params.get("code");
 
+// save query for later
+const artistQuery = params.get('artist');
+if (artistQuery && artistQuery != "") {
+    localStorage.setItem('artist', artistQuery);
+}
+
 let profile: UserProfile;
 
 if (!code) {
@@ -39,9 +45,15 @@ async function getSongs(accessToken: any) {
         saveToPlaylist: document.getElementById("save-to-playlist")! as HTMLButtonElement
     }
 
+    // load url from localstorage
+    let artistQuery = localStorage.getItem('artist');
+    if ((!artistQuery || artistQuery == "") || (artistQuery && !confirm(`Would you like to use '${artistQuery}' for artist id or url`))) {
+        artistQuery = prompt("artist id or url") ?? null;
+    }
+    localStorage.removeItem('artist');
+    
     // get artist
-    let artistId = prompt("artist id or url") ?? null;
-    artistId = extractArtistId(artistId);
+    const artistId = extractArtistId(artistQuery);
     let artist;
     if (artistId) {
         console.log('fetching artist:')
