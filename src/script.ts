@@ -40,7 +40,7 @@ async function getSongs(accessToken: any) {
     }
 
     // get artist
-    let artistId = prompt("artist id") ?? null;
+    let artistId = prompt("artist id or url") ?? null;
     artistId = extractArtistId(artistId);
     let artist;
     if (artistId) {
