@@ -9,14 +9,19 @@ To install a local dev version of my spotify helper, follow these steps:
 
 ## Todo
 
-Functionality
+#### Functionality
 - [x] Automatically save to playlist
 - [x] order tracks by
   - [x] popularity 
+- [x] allow url query for artist url or id
+- [ ] allow service to be used parallel in multiple tabs/windows/clients
+- [ ] allow service to be reused (sequentially)
+
+#### Hosting
 - [ ] host app using github pages
 - [ ] downloadable as script or exe
 
-UI
+#### UI
 - [ ] css library
 - [ ] improve layout
 - [ ] naviation through functionalitues ?
