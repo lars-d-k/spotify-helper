@@ -1,8 +1,9 @@
 // Because this is a literal single page application
 // we detect a callback from Spotify by checking for the hash fragment
 import { redirectToAuthCodeFlow, getAccessToken } from "./authCodeWithPkce";
+import { client_id } from '../options.json';
+alert(`client id: ${client_id}`)
 
-const clientId = "905dd5f352484d81a65a690fe3f0b4e6";
 const params = new URLSearchParams(window.location.search);
 const code = params.get("code");
 
@@ -15,15 +16,15 @@ if (artistQuery && artistQuery != "") {
 let profile: UserProfile;
 
 if (!code) {
-    redirectToAuthCodeFlow(clientId);
+    redirectToAuthCodeFlow(client_id);
 } else {
     let accessToken;
     while (true) {
-        accessToken = await getAccessToken(clientId, code);
+        accessToken = await getAccessToken(client_id, code);
         profile = await fetchProfile(accessToken);
         if (profile.error) {
             console.log(profile.error)
-            redirectToAuthCodeFlow(clientId);
+            redirectToAuthCodeFlow(client_id);
         } else {
             break;
         }
