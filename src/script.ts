@@ -30,9 +30,16 @@ if (!code) {
     }
 
     populateUI(profile, accessToken);
+
+    let artistQuery = localStorage.getItem('artist');
+    localStorage.removeItem('artist');
+    let artistId = extractArtistId(artistQuery);
+    if (artistId && confirm(`Would you like to use '${artistId}' for artist id`)) {
+        await getSongs(accessToken, artistId);
+    }
 }
 
-async function getSongs(accessToken: any) {
+async function getSongs(accessToken: any, artistId: string | null) {
     // define html elements
     let headings = {
         title: document.getElementById("title")! as HTMLHeadingElement,
@@ -45,20 +52,14 @@ async function getSongs(accessToken: any) {
         saveToPlaylist: document.getElementById("save-to-playlist")! as HTMLButtonElement
     }
 
-    // load url from localstorage
-    let artistQuery = localStorage.getItem('artist');
-    if ((!artistQuery || artistQuery == "") || (artistQuery && !confirm(`Would you like to use '${artistQuery}' for artist id or url`))) {
-        artistQuery = prompt("artist id or url") ?? null;
+    // get artist id if it isnt provided
+    if (!artistId) {
+        artistId = extractArtistId(prompt("artist id or url")) ?? "no artist provided";
     }
-    localStorage.removeItem('artist');
     
     // get artist
-    const artistId = extractArtistId(artistQuery);
-    let artist;
-    if (artistId) {
-        console.log('fetching artist:')
-        artist = await fetchArtist(accessToken, artistId);
-    } 
+    console.log(`fetching artist for id '${artistId}'`)
+    const artist = await fetchArtist(accessToken, artistId);
 
     if (!artist || artist.error) {
         buttons.getArtist.disabled = false;
