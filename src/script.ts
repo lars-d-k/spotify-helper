@@ -2,7 +2,6 @@
 // we detect a callback from Spotify by checking for the hash fragment
 import { redirectToAuthCodeFlow, getAccessToken } from "./authCodeWithPkce";
 import { client_id } from '../options.json';
-alert(`client id: ${client_id}`)
 
 const params = new URLSearchParams(window.location.search);
 const code = params.get("code");
@@ -38,7 +37,20 @@ if (!code) {
     if (artistId && confirm(`Would you like to use '${artistId}' for artist id`)) {
         await getSongs(accessToken, artistId);
     }
+    
+    document.addEventListener('paste', async function(event: ClipboardEvent) {
+        // Get the pasted text
+        const clipboardData = event.clipboardData;
+        if (clipboardData) {
+            let pastedText = clipboardData.getData('text');
+            if (!extractArtistId(pastedText)) {
+                pastedText = prompt(`Pasted text was an invalid artist url or id, enter another one`) ?? "no artist provided";
+            }
+            await getSongs(accessToken, extractArtistId(pastedText));
+        }
+    });
 }
+
 
 async function getSongs(accessToken: any, artistId: string | null) {
     // define html elements
