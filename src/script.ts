@@ -40,10 +40,15 @@ async function getSongs(accessToken: any) {
     }
 
     // get artist
-    const artistId = prompt("artist id") ?? ""
-    console.log('fetching artist:')
-    const artist = await fetchArtist(accessToken, artistId);
-    if (artist.error) {
+    let artistId = prompt("artist id") ?? null;
+    artistId = extractArtistId(artistId);
+    let artist;
+    if (artistId) {
+        console.log('fetching artist:')
+        artist = await fetchArtist(accessToken, artistId);
+    } 
+
+    if (!artist || artist.error) {
         buttons.getArtist.disabled = false;
         buttons.copySongs.disabled = true;
         buttons.saveToPlaylist.disabled = true;
@@ -83,7 +88,7 @@ async function getSongs(accessToken: any) {
     
     // only tracks that include artist
     headings.subtitle.innerText = `Processing tracks...`;
-    tracks = tracks.filter(x => x.artists.map(x => x.id).includes(artist.id)); 
+    tracks = tracks.filter(x => x.artists.map(y => y.id).includes(artist.id)); 
     
     // enrich track info
     headings.subtitle.innerText = `Getting more track info...`;
@@ -292,6 +297,27 @@ function getUniqueTracks(tracks: Track[]): Track[] {
         }
         return r;
     }, {}));
+}
+
+function extractArtistId(input: string | null): string | null {
+    if (!input) {
+        return input
+    }
+
+    const spotifyUrlPattern = /https:\/\/open\.spotify\.com\/artist\/([a-zA-Z0-9]+)/;
+    const match = input.match(spotifyUrlPattern);
+
+    // if it is a spotify artist url, then return the first argument after
+    if (match) {
+        return match[1];
+    } 
+
+    // if it is an artist id, return it
+    if (/^[a-zA-Z0-9]+$/.test(input)) {
+        return input;
+    }
+
+    return null;
 }
 
 function populateUI(profile: UserProfile, accessToken: any) {
