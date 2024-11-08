@@ -3,9 +3,9 @@
 ## Installation
 To install a local dev version of my spotify helper, follow these steps:
 - Clone this repo to a local folder `git clone <url> <dir>`
-- Configure git to ignore options `git update-index --assume-unchanged .\options.json`
 - Add a client id `options.json` > `{ "client_id": "<client_id>" }`
-  - Create an app [here](https://developer.spotify.com/dashboard)
+  - Configure git to ignore options `git update-index --assume-unchanged .\options.json`
+  - Get a client id [here](https://developer.spotify.com/dashboard)
 - Run the vite script `npm run dev`
 
 ## Todo
